@@ -54,7 +54,7 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 <div id="header">
 <h1 class="title">Practical Machine Learning Course Project</h1>
 <h4 class="author"><em>Wellington Cunha</em></h4>
-<h4 class="date"><em>Wednesday, December 17, 2014</em></h4>
+<h4 class="date"><em>December, 2014</em></h4>
 </div>
 
 
@@ -207,8 +207,17 @@ dim(training)</code></pre>
 <pre class="r"><code>library(&quot;randomForest&quot;, lib.loc=&quot;~/R/win-library/3.1&quot;)
 model = randomForest(classe ~ ., data=training)
 Prediction &lt;- predict(model, validating, type = &quot;class&quot;)
-#confusionMatrix(Prediction, validating)</code></pre>
-<p>As we have 99,5% of accuracy by using this model, we are going to conclude the assignment by loading the testing dataset and generating the files</p>
+table(Prediction, validating$classe)</code></pre>
+<pre><code>##           
+## Prediction    A    B    C    D    E
+##          A 1673    2    0    0    0
+##          B    1 1136    6    0    0
+##          C    0    1 1018    5    0
+##          D    0    0    1  958    2
+##          E    0    0    1    1 1080</code></pre>
+<pre class="r"><code>mean(predict(model, validating) == validating$classe) * 100</code></pre>
+<pre><code>## [1] 99.66015</code></pre>
+<p>As we have 99,7% of accuracy by using this model, we are going to conclude the assignment by loading the testing dataset and generating the files</p>
 </div>
 <div id="generating-files" class="section level2">
 <h2>Generating files</h2>

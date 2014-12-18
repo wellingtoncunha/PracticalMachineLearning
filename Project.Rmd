@@ -1,0 +1,95 @@
+---
+title: "Practical Machine Learning Course Project"
+author: "Wellington Cunha"
+date: "December, 2014"
+output: html_document
+---
+
+```{r global_options, include=FALSE}
+library(knitr)
+opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+               warning=FALSE, message=FALSE)
+```
+
+## Executive Summary
+"Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: <http://groupware.les.inf.puc-rio.br/har> (see the section on the Weight Lifting Exercise Dataset)." 
+
+As part of Practical Machine Learning couse, developed by Johns Hopkins and provided by Coursera, we should develop an algorithm to predict the manner in which the exercises were done, provided in "classe" variable.
+
+After develop the script, run the algorithm over the test data and submit 20 test cases.
+
+##Getting and loading data
+As first step, we should set the environment variables related to working directory and the seed for randomization, in order to make the reports reproducible:
+```{r}
+setwd("C:\\Users\\Wellington\\Desktop\\DataScience\\Coursera\\08 Practical Machine Learning")
+set.seed(1)
+```
+
+After that we are going download the two files (training and test) and load the training into a variable:
+```{r}
+trainURL <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testURL <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+download.file(trainURL, "pml-training.csv")
+download.file(testURL, "pml-testing.csv")
+data = read.csv("pml-training.csv", na.strings = c("NA", ""))
+dim(data)
+```
+
+After that we are going to partition the data into training and test datasets in order to have the appropriate sets to build the model and also check it:
+```{r}
+library("caret", lib.loc="~/R/win-library/3.1")
+inTrain = createDataPartition(y=data$classe, p=0.7, list=FALSE)
+training = data[inTrain,]
+validating = data[-inTrain,]
+dim(training)
+```
+
+## Exploratory data analysis
+As we noticed, there are 160 variables and we are going to check how many of them have values near to zeroes and remove them. After that, we are going to check what is the content of the other variables:
+```{r}
+ZeroColumns <- nearZeroVar(training, saveMetrics=TRUE)
+RemoveColumns <- row.names(ZeroColumns[ZeroColumns$nzv == TRUE,])
+training <- training[,!names(training) %in% RemoveColumns]
+str(training)
+```
+
+Since we are going to use just "classe" variable, we are going to remove any other descriptive variable from the dataset:
+```{r}
+training <- training[, c(8:ncol(training))]
+```
+
+As we have noticed that there are a lot of columns with too many NA values, we are going to remove the columns that has more than 50% of NA values on it:
+```{r}
+training <- training[,!colSums(is.na(training)) > nrow(training) * .5]
+dim(training)
+```
+Now, besides the "classe" variable, we have 51 variables with values that are not near to zero and that has less than 50% of their values as NA.
+
+##Model building and selection
+Now, we are going to build a model using Random Forests and check againts the Validating dataset its accuracy:
+```{r}
+library("randomForest", lib.loc="~/R/win-library/3.1")
+model = randomForest(classe ~ ., data=training)
+Prediction <- predict(model, validating, type = "class")
+table(Prediction, validating$classe)
+mean(predict(model, validating) == validating$classe) * 100
+```
+As we have 99,7% of accuracy by using this model, we are going to conclude the assignment by loading the testing dataset and generating the files
+
+##Generating files
+```{r}
+testing <- read.csv("pml-testing.csv", na.strings = c("NA", ""))
+Prediction <- predict(model, testing, type = "class")
+
+pml_write_files = function(x){
+    n = length(x)
+    for(i in 1:n){
+        filename = paste0(".\\Results\\problem_id_",i,".txt")
+        write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+    }
+}
+pml_write_files(Prediction)
+```
+
+##Conclusion
+All the 20 files passed on their first submission, what indicates that the choosen model was the right one.
